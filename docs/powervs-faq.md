@@ -33,6 +33,28 @@ Note: allow a few minutes to sort all things out after these commands.
 #### Need to add more CPU/Memory to Node
 Go to <https://cloud.ibm.com>, then to your PowerVS service instance, find your VM that backs the cluster Node (eg. myocp-worker-0), click to open up the details page, then "Edit details," update the CPU/Memory with new values, and Save. You should get "Edit successful" message, and your OCP cluster should recognize the change and start showing in Compute section of Web Console. If something fails along the way, try "OS Shutdown" action, edit CPU/Memory as necessary while in "Shutoff" state, and restart the VM.
 
+#### Workers saturated, Let's have Masters help
+Follow the [standard OpenShift documentation](https://docs.openshift.com/container-platform/4.7/nodes/nodes/nodes-nodes-working.html#nodes-nodes-working-master-schedulable_nodes-nodes-working) to make master nodes "Schedulable" first. Then, add the now-Schedulable master nodes as eligible backends for HAProxy on bastion node (`/etc/haproxy/haproxy.cfg`), followed by `# systemctl restart haproxy`.
+```text
+backend ingress-http
+    balance source
+    server worker-0-http-router0 192.168.25.43:80 check
+    server worker-1-http-router1 192.168.25.157:80 check
+    server master-0-http-router0 192.168.25.195:80 check
+    server master-1-http-router1 192.168.25.148:80 check
+    server master-2-http-router2 192.168.25.8:80 check
+```
+```text
+backend ingress-https
+    balance source
+    server worker-0-https-router0 192.168.25.43:443 check
+    server worker-1-https-router1 192.168.25.157:443 check
+    server master-0-https-router0 192.168.25.195:443 check
+    server master-1-https-router1 192.168.25.148:443 check
+    server master-2-https-router2 192.168.25.8:443 check
+```
+Note: adjust the IP addresses per your setup.
+
 ---
 ## Securing a Cluster
 
